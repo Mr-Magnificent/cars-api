@@ -3,7 +3,7 @@ const Schema = mongoose.Schema;
 
 const bookingSchema = new Schema({
     car_id: { type: Schema.Types.ObjectId, ref: 'Car', required: true },
-    customer_details: { type: Schema.Types.ObjectId, ref: 'Customer', required: true },
+    user_details: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     issue_date: { type: Date, required: true, index: true },
     return_date: { type: Date, required: true, index: true }
 });
