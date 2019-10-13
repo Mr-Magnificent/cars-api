@@ -9,12 +9,12 @@ require('dotenv').config();
 const PORT = process.env.PORT || 3000;
 require('./app/config/database');
 
-app.use(bodyParser.urlencoded({extended: true}));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 app.use(cookieParser());
 
 
 app.listen(PORT, () => {
-	debug(`server started at port ${PORT}`);
+    debug(`server started at port ${PORT}`);
 });
