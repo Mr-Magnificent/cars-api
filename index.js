@@ -14,6 +14,7 @@ app.use(bodyParser.json());
 
 app.use(cookieParser());
 
+app.use('/api', require('./routes/api'));
 
 app.listen(PORT, () => {
     debug(`server started at port ${PORT}`);
