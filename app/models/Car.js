@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const carSchema = new Schema({
-    vin: { type: String, required: true, index: true, unique: true },
+    vin: { type: String, required: true, index: true, unique: true  },
     city: { type: String, required: true, lowercase: true },
     model: { type: String, required: true, index: true, lowercase: true },
     seat_capacity: Number,

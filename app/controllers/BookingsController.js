@@ -5,13 +5,12 @@ const Booking = require('../models/Bookings');
 const Car = require('../models/Car');
 
 exports.create = async (req, res) => {
-
     try {
-        const issueDate = moment(req.body.issueDate, 'DD-MM-YYYY');
-        const returnDate = moment(req.body.returnDate, 'DD-MM-YYYY');
+        const issueDate = moment(req.body.issueDate, 'DD-MM-YYYY').startOf('day');
+        const returnDate = moment(req.body.returnDate, 'DD-MM-YYYY').endOf('day');
 
         const dateIsValid = issueDate.isValid() && returnDate.isValid()
-            && issueDate.isSameOrBefore(returnDate);
+            && issueDate.isSameOrBefore(returnDate) && issueDate.isSameOrAfter(moment().startOf('day'));
 
         if (!dateIsValid) {
             return res.status(422).json({
@@ -26,6 +25,11 @@ exports.create = async (req, res) => {
             });
         }
 
+        const result = await bookingExists(issueDate, returnDate, carBooked);
+        if (result) {
+            return res.status(422).json({ message: 'Car already booked for given dates' });
+        }
+
         const createdBooking = await Booking.create({
             car_id: carBooked._id,
             user_details: req.user.id,
@@ -34,6 +38,7 @@ exports.create = async (req, res) => {
         });
 
         carBooked.bookings.push(createdBooking._id);
+        await carBooked.save();
 
         return res.status(200).json({
             message: 'Booking Created',
@@ -43,5 +48,46 @@ exports.create = async (req, res) => {
     } catch (err) {
         debug(err);
         return res.status(500).json({ message: err.message });
+    }
+};
+
+const bookingExists = async (issueDate, returnDate, carBooked) => {
+    try {
+        let overlapQuery = Booking.findOne();
+        /**
+     *     isu [ ret ],  [ isu ] ret, [ isu ret ]
+     */
+        overlapQuery.where({
+            $or: [
+                {
+                    issue_date: {
+                        $gte: issueDate.toISOString(),
+                        $lte: returnDate.toISOString()
+                    }
+                },
+                {
+                    return_date: {
+                        $gte: issueDate.toISOString(),
+                        $lte: returnDate.toISOString()
+                    }
+                }
+            ]
+        });
+    
+        overlapQuery.where({
+            car_id: carBooked.id
+        });
+
+        const overlapBookings = await overlapQuery.exec();
+        debug(overlapBookings);
+
+        if (overlapBookings) {
+            return true;
+        }
+        return false;
+        
+    } catch (err) {
+        debug(err);
+        throw err;
     }
 };

@@ -18,6 +18,7 @@ router.post('/login', joiValidate(Schemas.login), LoginController.login);
 router.get('/search-cars', CarController.search);
 router.get('/search-by-model', CarController.searchByModel);
 
+// protected routes
 router.use(authenticate);
 
 // bookings

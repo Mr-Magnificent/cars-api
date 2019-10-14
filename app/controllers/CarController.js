@@ -28,28 +28,48 @@ exports.update = async (req, res) => {
     }
 
     try {
-        const car = await Car.find({ vin: req.body.vin });
+        const car = await Car.findOne({ vin: req.body.vin });
+        
+        if (!car) {
+            return res.status(404).json({
+                message: 'No such car'
+            });
+        }
+        
+        const active = await chkActiveBookings(car.id);
+        if (active) {
+            return res.status(422).send({message: 'The car cannot be modified because of active bookings'});
+        }
+        
+        const updateQuery = Car.find({ vin: req.body.vin });
         if (req.body.city) {
-            car.city = req.body.city;
+            updateQuery.update({
+                city: req.body.city
+            });
         }
 
         if (req.body.seatCapacity) {
-            car.seat_capacity = req.body.seatCapacity;
+            updateQuery.update({
+                seat_capacity: parseInt(req.body.seatCapacity)
+            });
         }
 
-        if (req.rentPerDay) {
-            car.rent_per_day = req.body.rentPerDay;
+        if (req.body.rentPerDay) {
+            updateQuery.update({
+                rent_per_day: parseInt(req.body.rentPerDay)
+            });
         }
 
         if (req.body.model) {
-            car.model = req.body.model;
+            updateQuery.update({
+                model: req.body.model
+            });
         }
 
-        const updatedCar = await car.save();
+        const updatedCar = await updateQuery.exec();
 
         return res.status(200).json({
             message: 'Car updated',
-            old: car,
             updated: updatedCar
         });
 
@@ -60,19 +80,63 @@ exports.update = async (req, res) => {
 };
 
 exports.delete = async (req, res) => {
-    if (!req.body.vin) {
+    if (!req.query.vin) {
         return res.status(400).json({ message: 'vehicle identification number (VIN) required' });
     }
 
     try {
-        const deletedCar = await Car.findOneAndDelete({ vin: req.body.vin });
+        const car = await Car.findOne({
+            vin: req.query.vin
+        });
+
+        if (!car) {
+            return res.status(404).json({
+                message: 'No such car'
+            });
+        }
+
+        const active = await chkActiveBookings(car.id);
+        if (active) {
+            return res.status(422).send({message: 'The car cannot be deleted because of active bookings'});
+        }
+
+        const deletedCar = await Car.findByIdAndDelete(car.id);
+        const deletedBookings = await Booking.deleteMany({
+            car_id: deletedCar.id
+        });
+        
         return res.status(200).json({
             message: 'Car removed',
-            car: deletedCar
+            car: deletedCar,
+            bookings: {
+                message: 'deleted associated bookings with car',
+                deleted: deletedBookings
+            }
         });
+
     } catch (err) {
         debug.extend('error delete')(err);
         return res.status(500).json({ message: err.message });
+    }
+};
+
+const chkActiveBookings = async (id) => {
+    try {
+        const bookings = await Booking.findOne({
+            car_id: id,
+            return_date: {
+                $gte: moment().startOf('day').toISOString()
+            }
+        });
+
+        if (bookings) {
+            return true;
+        }
+        return false;
+
+    } catch (err) {
+        debug.extend('chkActiveBookings')(err);
+        throw err;
     }
 };
 
@@ -100,8 +164,8 @@ exports.search = async (req, res) => {
 };
 
 const getOverlapDocuments = async (req) => {
-    const issueDate = moment(req.query.issueDate, 'DD-MM-YYYY');
-    const returnDate = moment(req.query.returnDate, 'DD-MM-YYYY');
+    const issueDate = moment(req.query.issueDate, 'DD-MM-YYYY').startOf('day');
+    const returnDate = moment(req.query.returnDate, 'DD-MM-YYYY').endOf('day');
 
     const datesValid = issueDate.isValid() && returnDate.isValid()
     && issueDate.isSameOrBefore(returnDate);

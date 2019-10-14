@@ -16,6 +16,11 @@ app.use(cookieParser());
 
 app.use('/api', require('./routes/api'));
 
+app.use(express.static('public'));
+app.get('/', (req, res) => {
+    res.sendFile('/index.html');
+});
+
 app.listen(PORT, () => {
     debug(`server started at port ${PORT}`);
 });

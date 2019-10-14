@@ -1,6 +1,5 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-// const express = require('express');
 const debug = require('debug')('app:login');
 
 const User = require('../models/User');
