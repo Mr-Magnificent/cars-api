@@ -12,7 +12,8 @@ const schemas = {
         password: Joi.string().min(6).required().note('Password should be atleast 6 letters')
     }),
     addCar: Joi.object({
-        VIN: Joi.string().required().description('Vehicle registration number'),
+        vin: Joi.string().required().description('Vehicle registration number'),
+        city: Joi.string().required().description('City of car'),
         model: Joi.string().required(),
         seatCapacity: Joi.number(),
         rentPerDay: Joi.number(),

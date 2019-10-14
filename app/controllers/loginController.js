@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 // const express = require('express');
-const debug = require('debug')('app:');
+const debug = require('debug')('app:login');
 
 const User = require('../models/User');
 
@@ -9,7 +9,7 @@ exports.login = async (req, res) => {
     try {
         const user = await User.findOne({ email: req.body.email });
         if (!user) {
-            return res.status(400).json({ message: 'User doesn\'t exist' });
+            return res.status(404).json({ message: 'User doesn\'t exist' });
         }
 
         const pwdEqual = await bcrypt.compare(req.body.password, user.password);
@@ -17,8 +17,8 @@ exports.login = async (req, res) => {
             return res.status(401).json({ message: 'password mismatch' });
         }
 
-        const token = jwt.sign({ ...user._id }, process.env.SECRET);
-        res.cookie('jwt', token, {httpOnly: true});
+        const token = jwt.sign(user.id, process.env.SECRET);
+        res.cookie('token', token, {httpOnly: true});
         return res.json({ message: 'Successfully logged in', token: token });
 
     } catch (err) {
@@ -41,7 +41,7 @@ exports.register = async (req, res) => {
             username: req.body.username,
             email: req.body.email,
             password: hashedPwd,
-            is_admin: req.body.is_admin
+            is_admin: req.body.isAdmin
         });
 
         return res.status(200).json({
