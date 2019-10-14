@@ -1,3 +1,8 @@
+## API Documentation as well as requests present in insomnia file
+
+----------------------------------------------------------------------------------
+# _API_
+
 # Register
 ## Body required
 ```
